@@ -52,6 +52,7 @@ def generate_id(instance, tags_filter, region):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--default-user', help='Default ssh username to use if it can\'t be detected from AMI name')
+    parser.add_argument('--default-key', help='Default ssh key to use if the instance has no key pair name')
     parser.add_argument('--keydir', default='~/.ssh/', help='Location of private keys')
     parser.add_argument('--no-identities-only', action='store_true', help='Do not include IdentitiesOnly=yes in ssh config; may cause connection refused if using ssh-agent')
     parser.add_argument('--prefix', default='', help='Specify a prefix to prepend to all host names')
@@ -90,9 +91,6 @@ def main():
                 continue
 
             if instance.platform == 'windows':
-                continue
-
-            if instance.key_name is None:
                 continue
 
             if instance.launch_time not in instances:
@@ -163,7 +161,14 @@ def main():
             else:
                 keydir = '~/.ssh/'
 
-            print '    IdentityFile ' + keydir + instance.key_name.replace(' ', '_') + '.pem'
+            if instance.key_name:
+                key = instance.key_name.replace(' ', '_') + '.pem'
+            else:
+                key = args.default_key
+
+            if key:
+                print '    IdentityFile ' + keydir + key
+
             if not args.no_identities_only:
                 # ensure ssh-agent keys don't flood when we know the right file to use
                 print '    IdentitiesOnly yes'
